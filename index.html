@@ -428,22 +428,33 @@ function _buildPayload(){
   };
 }
 
-function _pushToSheets(){
-  var payload=_buildPayload();
-  var json=JSON.stringify(payload);
-  // Use fetch POST to avoid URL length limits
-  fetch(SHEETS_URL, {
-    method:'POST',
-    headers:{'Content-Type':'application/x-www-form-urlencoded'},
-    body:'action=write&data='+encodeURIComponent(json)
-  }).then(function(r){return r.text();})
-  .then(function(t){
-    notify('Kaydedildi ✓','ok');
-  }).catch(function(e){
-    // CORS error but data may still be saved - verify with read
-    console.log('POST sent, CORS blocked response (normal):', e.message);
-    notify('Kaydedildi ✓','ok');
+function _jsonpSend(data){
+  return new Promise(function(resolve){
+    var cb='_wjcb'+Date.now()+Math.floor(Math.random()*9999);
+    var s=document.createElement('script');
+    window[cb]=function(){delete window[cb];if(s.parentNode)s.parentNode.removeChild(s);resolve();};
+    s.onerror=function(){delete window[cb];if(s.parentNode)s.parentNode.removeChild(s);resolve();};
+    s.src=SHEETS_URL+'?action=write&callback='+cb+'&data='+encodeURIComponent(JSON.stringify(data));
+    document.head.appendChild(s);
+    setTimeout(function(){if(s.parentNode)s.parentNode.removeChild(s);resolve();},8000);
   });
+}
+
+async function _pushToSheets(){
+  var payload=_buildPayload();
+  try{
+    // 1) Ayarlar + Aidatlar + GG + Firmalar
+    await _jsonpSend({ayarlar:payload.ayarlar,daireler:[],aidatlar:payload.aidatlar,gg:payload.gg,firmalar:payload.firmalar});
+    // 2) Daireleri 5'erli gruplarda gönder
+    var CHUNK=5;
+    for(var i=0;i<payload.daireler.length;i+=CHUNK){
+      var chunk=payload.daireler.slice(i,i+CHUNK);
+      await _jsonpSend({action_daire:'append',ayarlar:payload.ayarlar,daireler:chunk,aidatlar:[],gg:[],firmalar:[],_chunkIndex:i,_chunkSize:CHUNK,_totalDaireler:payload.daireler.length});
+    }
+    notify('Kaydedildi ✓','ok');
+  }catch(e){
+    console.error('Kayıt hatası:',e);
+  }
 }
 
 async function _loadFromSheets(){
