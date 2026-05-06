@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apartman Yönetim Sistemi</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f5f5f0;color:#1a1a1a;font-size:14px}
+.app{max-width:1100px;margin:0 auto;padding:1.5rem 1rem}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid #e0e0d8;flex-wrap:wrap;gap:10px}
+.header h1{font-size:20px;font-weight:600}
+.header-sub{font-size:12px;color:#666;margin-top:2px}
+.tabs{display:flex;gap:2px;margin-bottom:1.5rem;border-bottom:1px solid #e0e0d8;flex-wrap:wrap}
+.tab{padding:9px 16px;font-size:13px;cursor:pointer;border:none;background:transparent;color:#666;border-bottom:2px solid transparent;margin-bottom:-1px;font-weight:500}
+.tab.active{color:#1a1a1a;border-bottom-color:#1a1a1a}
+.tab:hover{color:#1a1a1a;background:#f0f0ec}
+.panel{display:none}.panel.active{display:block}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:1.25rem}
+.metric{background:#fff;border:1px solid #e0e0d8;border-radius:10px;padding:.875rem}
+.metric-label{font-size:11px;color:#888;margin-bottom:3px}
+.metric-value{font-size:22px;font-weight:600}
+.green{color:#2d7a4f}.red{color:#c0392b}.amber{color:#d68910}
+.card{background:#fff;border:1px solid #e0e0d8;border-radius:12px;padding:1.1rem 1.25rem;margin-bottom:1rem}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px}
+.card-title{font-size:14px;font-weight:600}
+.btn{padding:7px 14px;font-size:12px;border:1px solid #d0d0c8;border-radius:8px;background:#fff;cursor:pointer;color:#1a1a1a;font-weight:500}
+.btn:hover{background:#f5f5f0}
+.btn.primary{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.btn.primary:hover{background:#333}
+.btn.excel-btn{background:#1D6F42;color:#fff;border-color:#1D6F42}
+.btn.excel-btn:hover{background:#155a34}
+.btn.sm{padding:4px 10px;font-size:11px}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:500px}
+th{text-align:left;padding:8px 10px;font-weight:600;font-size:11px;color:#888;border-bottom:1px solid #e0e0d8;white-space:nowrap;background:#fafaf8}
+td{padding:8px 10px;border-bottom:1px solid #f0f0ec;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafaf8}
+.badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600}
+.b-odendi{background:#d4edda;color:#1a6b38}
+.b-bekliyor{background:#fff3cd;color:#856404}
+.b-gecikti{background:#f8d7da;color:#721c24}
+.b-gelir{background:#d4edda;color:#1a6b38}
+.b-gider{background:#f8d7da;color:#721c24}
+.b-kasa{background:#e8d5f5;color:#5a1e8c}
+.b-kiraci{background:#cce5ff;color:#004085}
+.b-evsahibi{background:#f0f0ec;color:#555;border:1px solid #d0d0c8}
+.b-auto{background:#e0f0ff;color:#0050a0;font-size:10px}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fg label{font-size:11px;color:#666;font-weight:500}
+.fg input,.fg select,.fg textarea{padding:8px 10px;font-size:13px;border:1px solid #d0d0c8;border-radius:8px;background:#fff;color:#1a1a1a;width:100%;font-family:inherit}
+.fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:#888}
+.fg textarea{resize:vertical;min-height:60px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1rem}
+.full{grid-column:1/-1}
+.section-divider{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:10px 0 6px;border-bottom:1px solid #e0e0d8;margin-bottom:10px;grid-column:1/-1}
+.overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:100;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto}
+.overlay.open{display:flex}
+.modal{background:#fff;border-radius:14px;padding:1.5rem;width:580px;max-width:100%;border:1px solid #e0e0d8;max-height:90vh;overflow-y:auto;margin:auto}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem}
+.modal-title{font-size:16px;font-weight:600}
+.close-btn{background:none;border:none;cursor:pointer;font-size:22px;color:#888;line-height:1;padding:0 4px}
+.close-btn:hover{color:#333}
+.actions{display:flex;gap:8px;justify-content:flex-end;margin-top:1rem;padding-top:1rem;border-top:1px solid #f0f0ec}
+.notif{padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px;display:none;font-weight:500}
+.notif.show{display:block}
+.notif.ok{background:#d4edda;color:#1a6b38;border:1px solid #a8d5b8}
+.notif.err{background:#f8d7da;color:#721c24;border:1px solid #f1aeb5}
+.daire-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(85px,1fr));gap:6px;margin-bottom:.875rem}
+.daire-card{border:1px solid #e0e0d8;border-radius:8px;padding:8px;text-align:center;cursor:pointer;background:#fafaf8}
+.daire-card.oc{border-color:#a8d5b8;background:#d4edda}
+.daire-card.ob{border-color:#f0c040;background:#fff3cd}
+.daire-card.og{border-color:#f1aeb5;background:#f8d7da}
+.daire-no{font-size:16px;font-weight:700}
+.daire-sub{font-size:10px;color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.progress-bar{height:5px;background:#f0f0ec;border-radius:3px;overflow:hidden;margin-top:5px}
+.progress-fill{height:100%;background:#2d7a4f;border-radius:3px}
+.hidden{display:none}
+.kirac-box{background:#f0f7ff;border:1px solid #b8d4f0;border-radius:10px;padding:12px 14px;margin-top:4px;grid-column:1/-1}
+.kirac-box-title{font-size:11px;font-weight:600;color:#004085;margin-bottom:10px}
+.tabs-inner{display:flex;gap:6px;margin-bottom:1rem;flex-wrap:wrap}
+.tab-inner{padding:6px 14px;font-size:12px;cursor:pointer;border:1px solid #d0d0c8;border-radius:8px;background:#fff;color:#666;font-weight:500}
+.tab-inner.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.firma-card{border:1px solid #e0e0d8;border-radius:10px;padding:1rem 1.1rem;margin-bottom:.75rem;background:#fff}
+.firma-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;flex-wrap:wrap;gap:6px}
+.firma-ad{font-size:14px;font-weight:600}
+.firma-tur{font-size:11px;color:#888;margin-top:1px}
+.firma-detay{display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;font-size:12.5px}
+.firma-detay-label{color:#888}
+.empty{text-align:center;padding:2rem;color:#aaa;font-size:13px}
+.legend{display:flex;gap:14px;font-size:11px;color:#888;margin-top:6px;flex-wrap:wrap}
+.info-box{background:#fffbe6;border:1px solid #f0d060;border-radius:8px;padding:8px 12px;font-size:12px;color:#7a5c00;margin-bottom:10px}
+/* Aidat toplu ekleme */
+.donem-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+.donem-table th{background:#f5f5f0;padding:6px 8px;text-align:left;font-size:11px;color:#888;font-weight:600;border-bottom:1px solid #e0e0d8}
+.donem-table td{padding:6px 8px;border-bottom:1px solid #f0f0ec}
+.donem-table input,.donem-table select{padding:4px 7px;font-size:12px;border:1px solid #d0d0c8;border-radius:6px;background:#fff;width:100%}
+.donem-table tr:last-child td{border-bottom:none}
+@media(max-width:600px){.form-grid{grid-template-columns:1fr}.full{grid-column:1}}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="header">
+  <div>
+    <h1 id="apt-baslik">Apartman Yönetim Sistemi</h1>
+    <div class="header-sub" id="apt-alt"></div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn excel-btn" onclick="excelExport()">&#8595; Excel İndir</button>
+    <button class="btn" onclick="openModal('ayarlar-modal')">&#9881; Ayarlar</button>
+  </div>
+</div>
+
+<div id="notif" class="notif"></div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('ozet',this)">Özet</button>
+  <button class="tab" onclick="switchTab('aidatlar',this)">Aidatlar</button>
+  <button class="tab" onclick="switchTab('gelir-gider',this)">Gelir / Gider</button>
+  <button class="tab" onclick="switchTab('daireler',this)">Daireler</button>
+  <button class="tab" onclick="switchTab('firmalar',this)">Firmalar</button>
+  <button class="tab" onclick="switchTab('raporlar',this)">Raporlar</button>
+</div>
+
+<!-- ÖZET -->
+<div id="panel-ozet" class="panel active">
+  <div class="metrics" id="ozet-metrics"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Bu Ay Aidat Durumu</span></div>
+      <div id="ozet-daires" class="daire-grid"></div>
+      <div class="legend">
+        <span style="color:#2d7a4f">■ Ödendi</span>
+        <span style="color:#856404">■ Bekliyor</span>
+        <span style="color:#c0392b">■ Gecikti</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Son İşlemler</span></div>
+      <div id="son-islem"></div>
+    </div>
+  </div>
+</div>
+
+<!-- AİDATLAR -->
+<div id="panel-aidatlar" class="panel">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Aidat Takibi</span>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <select id="ay-filtre" onchange="renderAidatlar()" style="font-size:12px;padding:6px 10px;border:1px solid #d0d0c8;border-radius:8px;background:#fff"></select>
+        <button class="btn primary" onclick="openModal('aidat-modal')">+ Aidat Ekle</button>
+        <button class="btn" onclick="openModal('toplu-modal')" style="background:#fff3cd;border-color:#f0c040;color:#856404">+ Toplu Borç Gir</button>
+      </div>
+    </div>
+    <div class="info-box">💡 <b>Aidat → Gelir</b>: "Ödendi" olarak kaydedilen aidatlar otomatik olarak Gelir/Gider tablosuna yansır. Durumu değiştirirseniz kayıt da güncellenir.</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Daire</th><th>Sakin</th><th>Tür</th><th>Tutar</th><th>Dönem</th><th>Durum</th><th>Tarih</th><th>İşlem</th></tr></thead>
+      <tbody id="aidat-tbody"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- GELİR GİDER -->
+<div id="panel-gelir-gider" class="panel">
+  <div class="metrics" id="gg-metrics"></div>
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Gelir & Gider Kayıtları</span>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <select id="gg-filtre" onchange="renderGG()" style="font-size:12px;padding:6px 10px;border:1px solid #d0d0c8;border-radius:8px;background:#fff">
+          <option value="">Tümü</option><option value="kasa">Açılış Kasası</option><option value="gelir">Gelir</option><option value="gider">Gider</option>
+        </select>
+        <button class="btn" onclick="openModal('kasa-modal')" style="background:#e8d5f5;border-color:#c090e0;color:#5a1e8c">+ Kasa Girişi</button>
+        <button class="btn primary" onclick="openModal('gg-modal')">+ Ekle</button>
+      </div>
+    </div>
+    <div class="info-box">💡 <b>Ödenen aidatlar</b> bu tabloya otomatik yansır. <b>Açılış bakiyesi</b> için "Kasa Girişi" butonunu kullanın.</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Tarih</th><th>Tür</th><th>Kategori</th><th>Açıklama</th><th>Firma</th><th>Tutar</th><th>İşlem</th></tr></thead>
+      <tbody id="gg-tbody"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- DAİRELER -->
+<div id="panel-daireler" class="panel">
+  <div class="tabs-inner">
+    <button class="tab-inner active" onclick="switchDaireTab('liste',this)">Liste Görünümü</button>
+    <button class="tab-inner" onclick="switchDaireTab('detay',this)">Daire Detayı</button>
+  </div>
+  <div id="daire-liste-panel">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Daire & Sakin Bilgileri</span>
+        <button class="btn primary" onclick="openDaireModal(-1)">+ Daire Ekle</button>
+      </div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>No</th><th>Sakin</th><th>Tür</th><th>Telefon</th><th>E-posta</th><th>Plaka</th><th>Aidat</th><th>Giriş</th><th>İşlem</th></tr></thead>
+        <tbody id="daire-tbody"></tbody>
+      </table></div>
+    </div>
+  </div>
+  <div id="daire-detay-panel" class="hidden">
+    <div style="margin-bottom:1rem">
+      <select id="detay-daire-sel" onchange="renderDaireDetay()" style="font-size:13px;padding:8px 12px;border:1px solid #d0d0c8;border-radius:8px;background:#fff;min-width:220px"></select>
+    </div>
+    <div id="daire-detay-icerik"></div>
+  </div>
+</div>
+
+<!-- FİRMALAR -->
+<div id="panel-firmalar" class="panel">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">İletişim Firmaları / Rehber</span>
+      <button class="btn primary" onclick="openFirmaModal(-1)">+ Firma Ekle</button>
+    </div>
+    <div id="firma-listesi"></div>
+  </div>
+</div>
+
+<!-- RAPORLAR -->
+<div id="panel-raporlar" class="panel">
+  <div class="metrics" id="rapor-metrics"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+    <div class="card"><div class="card-header"><span class="card-title">Aylık Tahsilat Özeti</span></div><div id="aylik-ozet"></div></div>
+    <div class="card"><div class="card-header"><span class="card-title">Gider Kategorileri</span></div><div id="gider-kat"></div></div>
+  </div>
+  <div class="card"><div class="card-header"><span class="card-title">Borçlu Daireler</span></div><div id="borclu-div"></div></div>
+</div>
+</div>
+
+<!-- MODAL: AİDAT EKLE -->
+<div class="overlay" id="aidat-modal">
+<div class="modal">
+  <div class="modal-header"><span class="modal-title">Aidat Ekle / Güncelle</span><button class="close-btn" onclick="closeModal('aidat-modal')">×</button></div>
+  <div class="form-grid">
+    <div class="fg"><label>Daire</label><select id="a-daire" onchange="aidatDaireChange()"></select></div>
+    <div class="fg"><label>Dönem</label><input type="month" id="a-donem"></div>
+    <div class="fg"><label>Tutar (₺) <span id="a-tutar-hint" style="color:#888;font-weight:400"></span></label><input type="number" id="a-tutar" placeholder="0"></div>
+    <div class="fg"><label>Durum</label><select id="a-durum">
+      <option value="bekliyor">Bekliyor</option>
+      <option value="gecikti">Gecikti</option>
+      <option value="odendi">Ödendi</option>
+    </select></div>
+    <div class="fg"><label>Ödeme Tarihi</label><input type="date" id="a-tarih"></div>
+    <div class="fg"><label>Not</label><input type="text" id="a-not" placeholder="İsteğe bağlı"></div>
+  </div>
+  <div class="info-box" style="margin-bottom:0">💡 "Ödendi" seçilirse gelir tablosuna otomatik eklenir. Durum değişirse kayıt da güncellenir.</div>
+  <div class="actions"><button class="btn" onclick="closeModal('aidat-modal')">İptal</button><button class="btn primary" onclick="aidatEkle()">Kaydet</button></div>
+</div></div>
+
+<!-- MODAL: TOPLU BORÇ GİR -->
+<div class="overlay" id="toplu-modal">
+<div class="modal" style="width:680px">
+  <div class="modal-header"><span class="modal-title">Toplu Borç Girişi</span><button class="close-btn" onclick="closeModal('toplu-modal')">×</button></div>
+  <div class="info-box">Birden fazla daire ve dönem için aynı anda borç kaydı oluşturun. Ödenmemiş dönemleri hızlıca girin.</div>
+  <div class="form-grid" style="margin-bottom:12px">
+    <div class="fg"><label>Başlangıç Dönemi</label><input type="month" id="tb-bas"></div>
+    <div class="fg"><label>Bitiş Dönemi</label><input type="month" id="tb-bit"></div>
+    <div class="fg"><label>Durum</label><select id="tb-durum"><option value="gecikti">Gecikti</option><option value="bekliyor">Bekliyor</option></select></div>
+    <div class="fg" style="align-self:end"><button class="btn primary" onclick="topluOlustur()" style="width:100%">Daireleri Listele</button></div>
+  </div>
+  <div id="toplu-tablo"></div>
+  <div class="actions"><button class="btn" onclick="closeModal('toplu-modal')">İptal</button><button class="btn primary" onclick="topluKaydet()">Seçilenleri Kaydet</button></div>
+</div></div>
+
+<!-- MODAL: KASA GİRİŞİ -->
+<div class="overlay" id="kasa-modal">
+<div class="modal">
+  <div class="modal-header"><span class="modal-title">Kasa Girişi / Açılış Bakiyesi</span><button class="close-btn" onclick="closeModal('kasa-modal')">×</button></div>
+  <div class="info-box">Kasanızdaki mevcut parayı veya önceki dönemden devreden bakiyeyi buradan girin.</div>
+  <div class="form-grid">
+    <div class="fg"><label>Tutar (₺)</label><input type="number" id="k-tutar" placeholder="0"></div>
+    <div class="fg"><label>Tarih</label><input type="date" id="k-tarih"></div>
+    <div class="fg full"><label>Açıklama</label><input type="text" id="k-acik" placeholder="örn: Açılış bakiyesi, Devreden kasa..."></div>
+  </div>
+  <div class="actions"><button class="btn" onclick="closeModal('kasa-modal')">İptal</button><button class="btn primary" onclick="kasaEkle()">Kaydet</button></div>
+</div></div>
+
+<!-- MODAL: GELİR/GİDER EKLE -->
+<div class="overlay" id="gg-modal">
+<div class="modal">
+  <div class="modal-header"><span class="modal-title">Gelir / Gider Ekle</span><button class="close-btn" onclick="closeModal('gg-modal')">×</button></div>
+  <div class="form-grid">
+    <div class="fg"><label>Tür</label><select id="gg-tur" onchange="updateGGKat()"><option value="gelir">Gelir</option><option value="gider">Gider</option></select></div>
+    <div class="fg"><label>Kategori</label><select id="gg-kat"></select></div>
+    <div class="fg full"><label>Açıklama</label><input type="text" id="gg-acik" placeholder="Açıklama giriniz"></div>
+    <div class="fg"><label>İlgili Firma</label><select id="gg-firma"><option value="">— Seç —</option></select></div>
+    <div class="fg"><label>Tutar (₺)</label><input type="number" id="gg-tutar" placeholder="0"></div>
+    <div class="fg"><label>Tarih</label><input type="date" id="gg-tarih"></div>
+  </div>
+  <div class="actions"><button class="btn" onclick="closeModal('gg-modal')">İptal</button><button class="btn primary" onclick="ggEkle()">Kaydet</button></div>
+</div></div>
+
+<!-- MODAL: DAİRE EKLE/DÜZENLE -->
+<div class="overlay" id="daire-modal">
+<div class="modal">
+  <div class="modal-header"><span class="modal-title" id="daire-modal-title">Daire Ekle</span><button class="close-btn" onclick="closeModal('daire-modal')">×</button></div>
+  <div class="form-grid">
+    <div class="section-divider">Daire Bilgileri</div>
+    <div class="fg"><label>Daire No</label><input type="text" id="d-no" placeholder="örn: 1, 2A, 3B"></div>
+    <div class="fg"><label>Aylık Aidat (₺)</label><input type="number" id="d-aidat" placeholder="0"></div>
+    <div class="fg"><label>Araç Plakası</label><input type="text" id="d-plaka" placeholder="34 ABC 123"></div>
+    <div class="fg"><label>Notlar</label><textarea id="d-not"></textarea></div>
+    <div class="section-divider">Sakin Bilgileri</div>
+    <div class="fg"><label>Sakin Türü</label><select id="d-tur" onchange="updateDaireTur()"><option value="evsahibi">Ev Sahibi</option><option value="kiraci">Kiracı</option></select></div>
+    <div class="fg"><label>Ad Soyad</label><input type="text" id="d-ad" placeholder="Ad Soyad"></div>
+    <div class="fg"><label>Telefon</label><input type="tel" id="d-tel" placeholder="05xx xxx xx xx"></div>
+    <div class="fg"><label>E-posta</label><input type="email" id="d-email" placeholder="ornek@mail.com"></div>
+    <div class="fg"><label>Giriş Tarihi</label><input type="date" id="d-giris"></div>
+    <div id="evsahibi-box" class="kirac-box hidden">
+      <div class="kirac-box-title">Ev Sahibi Bilgileri</div>
+      <div class="form-grid" style="margin-bottom:0">
+        <div class="fg"><label>Ev Sahibi Adı</label><input type="text" id="d-es-ad"></div>
+        <div class="fg"><label>Ev Sahibi Telefonu</label><input type="tel" id="d-es-tel"></div>
+        <div class="fg"><label>Ev Sahibi E-posta</label><input type="email" id="d-es-email"></div>
+        <div class="fg"><label>Kira Tutarı (₺)</label><input type="number" id="d-kira"></div>
+        <div class="fg"><label>Sözleşme Başlangıç</label><input type="date" id="d-sozl-bas"></div>
+        <div class="fg"><label>Sözleşme Bitiş</label><input type="date" id="d-sozl-bit"></div>
+      </div>
+    </div>
+  </div>
+  <div class="actions"><button class="btn" onclick="closeModal('daire-modal')">İptal</button><button class="btn primary" onclick="daireKaydet()">Kaydet</button></div>
+</div></div>
+
+<!-- MODAL: FİRMA -->
+<div class="overlay" id="firma-modal">
+<div class="modal">
+  <div class="modal-header"><span class="modal-title" id="firma-modal-title">Firma Ekle</span><button class="close-btn" onclick="closeModal('firma-modal')">×</button></div>
+  <div class="form-grid">
+    <div class="fg full"><label>Firma Adı</label><input type="text" id="f-ad" placeholder="Firma adı"></div>
+    <div class="fg"><label>Kategori</label><select id="f-kat">
+      <option>Temizlik</option><option>Elektrik</option><option>Su / Tesisat</option><option>Asansör</option><option>Güvenlik</option><option>Bahçe</option><option>Sigorta</option><option>Muhasebe</option><option>İnşaat / Tadilat</option><option>Diğer</option>
+    </select></div>
+    <div class="fg"><label>Yetkili Kişi</label><input type="text" id="f-yetkili"></div>
+    <div class="fg"><label>Telefon</label><input type="tel" id="f-tel"></div>
+    <div class="fg"><label>E-posta</label><input type="email" id="f-email"></div>
+    <div class="fg"><label>Adres</label><input type="text" id="f-adres"></div>
+    <div class="fg full"><label>Not</label><textarea id="f-not"></textarea></div>
+  </div>
+  <div class="actions"><button class="btn" onclick="closeModal('firma-modal')">İptal</button><button class="btn primary" onclick="firmaKaydet()">Kaydet</button></div>
+</div></div>
+
+<!-- MODAL: AYARLAR -->
+<div class="overlay" id="ayarlar-modal">
+<div class="modal">
+  <div class="modal-header"><span class="modal-title">Apartman Ayarları</span><button class="close-btn" onclick="closeModal('ayarlar-modal')">×</button></div>
+  <div class="form-grid">
+    <div class="fg full"><label>Apartman Adı</label><input type="text" id="s-ad"></div>
+    <div class="fg"><label>Yönetici Adı</label><input type="text" id="s-yonetici"></div>
+    <div class="fg"><label>Standart Aidat (₺)</label><input type="number" id="s-aidat"></div>
+    <div class="fg"><label>Adres</label><input type="text" id="s-adres"></div>
+    <div class="fg"><label>Telefon</label><input type="tel" id="s-tel"></div>
+  </div>
+  <div class="actions"><button class="btn" onclick="closeModal('ayarlar-modal')">İptal</button><button class="btn primary" onclick="ayarlarKaydet()">Kaydet</button></div>
+</div></div>
+
+<script>
+const TODAY=new Date();
+const LS_KEY='apartman_v3';
+const AYLAR=['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
+const gelirKats=['Kira','Otopark','Diğer Gelir'];
+const giderKats=['Elektrik','Su','Doğalgaz','Temizlik','Asansör','Bakım-Onarım','Güvenlik','Sigorta','Bahçe','Diğer Gider'];
+let editDaireIdx=-1,editFirmaIdx=-1,nid=1000;
+
+const defaultV={ayarlar:{ad:'Apartmanım',yonetici:'',aidat:1500,adres:'',tel:''},daireler:[],aidatlar:[],gg:[],firmalar:[]};
+
+const SHEETS_URL='https://script.google.com/macros/s/AKfycbxm23NwF1Jo3kEc8nzHxf49OL0mKOSDO2rhOKJ_-aPDpTjZ8s3w_h15LYHED4AsJbZI/exec';
+let V=JSON.parse(JSON.stringify(defaultV));
+let _saveTimer=null;
+
+function jsonpFetch(url){
+  return new Promise(function(resolve,reject){
+    var cb='_jcb'+Date.now()+Math.floor(Math.random()*99999);
+    var s=document.createElement('script');
+    window[cb]=function(data){
+      resolve(data);
+      delete window[cb];
+      if(s.parentNode)s.parentNode.removeChild(s);
+    };
+    s.onerror=function(){
+      reject(new Error('Bağlantı hatası'));
+      delete window[cb];
+      if(s.parentNode)s.parentNode.removeChild(s);
+    };
+    s.src=url+(url.indexOf('?')>=0?'&':'?')+'callback='+cb;
+    document.head.appendChild(s);
+  });
+}
+
+function saveV(){
+  if(_saveTimer)clearTimeout(_saveTimer);
+  _saveTimer=setTimeout(function(){_pushToSheets();},1500);
+}
+
+async function _pushToSheets(){
+  var payload={
+    ayarlar:V.ayarlar,
+    daireler:V.daireler.map(function(d){
+      return {no:d.no,ad:d.ad,tur:d.tur==='kiraci'?'Kiracı':'Ev Sahibi',
+        tel:d.tel,email:d.email,aidat:d.aidat,plaka:d.plaka,giris:d.giris,not:d.not,
+        esAd:d.es?d.es.ad||'':'',esTel:d.es?d.es.tel||'':'',
+        esEmail:d.es?d.es.email||'':'',esKira:d.es?d.es.kira||'':'',
+        esSozlBas:d.es?d.es.sozlBas||'':'',esSozlBit:d.es?d.es.sozlBit||'':''};
+    }),
+    aidatlar:V.aidatlar.map(function(a){
+      var d2=getDaire(a.daireId);
+      return {id:a.id,daireNo:d2.no,sakin:d2.ad,
+        tur:d2.tur==='kiraci'?'Kiracı':'Ev Sahibi',
+        donem:a.donem,tutar:a.tutar,
+        durum:a.durum==='odendi'?'Ödendi':a.durum==='gecikti'?'Gecikti':'Bekliyor',
+        tarih:a.tarih,not:a.not||''};
+    }),
+    gg:V.gg.map(function(g){
+      return {id:g.id,tarih:g.tarih,
+        tur:g.tur==='kasa'?'Kasa':g.tur==='gelir'?'Gelir':'Gider',
+        kat:g.kat,acik:g.acik,firmaAd:'',tutar:g.tutar,aidatId:g.aidatId||0};
+    }),
+    firmalar:V.firmalar.map(function(f){
+      return {id:f.id,ad:f.ad,kat:f.kat,yetkili:f.yetkili,
+        tel:f.tel,email:f.email,adres:f.adres,not:f.not};
+    })
+  };
+  try{
+    await jsonpFetch(SHEETS_URL+'?action=write&data='+encodeURIComponent(JSON.stringify(payload)));
+  }catch(e){console.error('Kayıt hatası:',e);}
+}
+
+async function _loadFromSheets(){
+  var bar=document.createElement('div');
+  bar.style.cssText='position:fixed;top:0;left:0;right:0;height:3px;background:#1D6F42;z-index:9999';
+  document.body.appendChild(bar);
+  try{
+    var d=await jsonpFetch(SHEETS_URL+'?action=read');
+    if(d&&d.daireler&&d.daireler.length>0){
+      V.ayarlar=d.ayarlar||defaultV.ayarlar;
+      V.daireler=d.daireler.map(function(r){
+        return {id:+r.No||+r.id||0,no:String(r.No||r.no||''),ad:r['Ad Soyad']||r.ad||'',
+          tur:(r.Tur||r.tur||'')==='Kiracı'?'kiraci':'evsahibi',
+          tel:r.Telefon||r.tel||'',email:r.Eposta||r.email||'',
+          aidat:+r.Aidat||500,plaka:r.Plaka||r.plaka||'',
+          giris:r.Giris||r.giris||'',not:r.Not||r.not||'',
+          es:{ad:r.EsSahibiAd||'',tel:r.EsSahibiTel||'',email:r.EsSahibiEmail||'',
+            kira:+r.Kira||0,sozlBas:r.SozlBas||'',sozlBit:r.SozlBit||''}};
+      });
+      V.aidatlar=d.aidatlar.map(function(r){
+        var dur='bekliyor';
+        if((r.Durum||r.durum||'')==='Ödendi')dur='odendi';
+        else if((r.Durum||r.durum||'')==='Gecikti')dur='gecikti';
+        return {id:+r.Id||+r.id||0,daireId:+r.DaireNo||0,donem:r.Donem||r.donem||'',
+          tutar:+r.Tutar||0,durum:dur,tarih:r.Tarih||r.tarih||'',not:r.Not||r.not||''};
+      });
+      V.gg=d.gg.map(function(r){
+        var t='gider';
+        if((r.Tur||r.tur||'')==='Gelir')t='gelir';
+        else if((r.Tur||r.tur||'')==='Kasa')t='kasa';
+        return {id:+r.Id||+r.id||0,tur:t,kat:r.Kategori||r.kat||'',
+          acik:r.Aciklama||r.acik||'',firmaId:0,tutar:+r.Tutar||0,
+          tarih:r.Tarih||r.tarih||'',aidatId:+r.AidatId||0,auto:+r.AidatId>0};
+      });
+      V.firmalar=d.firmalar.map(function(r){
+        return {id:+r.Id||+r.id||0,ad:r.Ad||r.ad||'',kat:r.Kategori||r.kat||'',
+          yetkili:r.Yetkili||r.yetkili||'',tel:r.Telefon||r.tel||'',
+          email:r.Eposta||r.email||'',adres:r.Adres||r.adres||'',not:r.Not||r.not||''};
+      });
+      // daireId eşleştir
+      V.aidatlar.forEach(function(a){
+        var d2=V.daireler.find(function(x){return String(x.no)===String(a.daireId);});
+        if(d2)a.daireId=d2.id;
+      });
+    }
+  }catch(e){console.error('Sheets yüklenemedi:',e);}
+  document.body.removeChild(bar);
+}
+
+function fmt(n){return Number(n).toLocaleString('tr-TR')+'₺'}
+function ayFmt(s){if(!s)return '';const[y,m]=s.split('-');return AYLAR[+m-1]+' '+y}
+function tarFmt(s){if(!s)return '-';const[y,m,d]=s.split('-');return d+'.'+m+'.'+y}
+function getDaire(id){return V.daireler.find(d=>d.id===id)||{no:'?',ad:'?',tur:'evsahibi'}}
+function getFirma(id){return V.firmalar.find(f=>f.id===id)}
+function notify(msg,tip='ok'){const n=document.getElementById('notif');n.textContent=msg;n.className='notif show '+tip;setTimeout(()=>n.classList.remove('show'),3500)}
+function openModal(id){document.getElementById(id).classList.add('open')}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+
+/* ── Aidat → Gelir otomatik senkronizasyon ── */
+function syncAidatGelir(aidat){
+  // gg kaydındaki aidatId'ye göre bul
+  const existing=V.gg.findIndex(g=>g.aidatId===aidat.id);
+  if(aidat.durum==='odendi'){
+    const d=getDaire(aidat.daireId);
+    const entry={id:existing>=0?V.gg[existing].id:nid++,tur:'gelir',kat:'Aidat',acik:`No ${d.no} – ${d.ad} – ${ayFmt(aidat.donem)} aidatı`,firmaId:0,tutar:aidat.tutar,tarih:aidat.tarih||TODAY.toISOString().slice(0,10),aidatId:aidat.id,auto:true};
+    if(existing>=0)V.gg[existing]=entry;
+    else V.gg.push(entry);
+  } else {
+    if(existing>=0)V.gg.splice(existing,1);
+  }
+}
+
+function switchTab(tab,el){
+  document.querySelectorAll('.tabs>.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('panel-'+tab).classList.add('active');
+  if(tab==='ozet')renderOzet();
+  else if(tab==='aidatlar')renderAidatlar();
+  else if(tab==='gelir-gider')renderGG();
+  else if(tab==='daireler')renderDaireListesi();
+  else if(tab==='firmalar')renderFirmalar();
+  else if(tab==='raporlar')renderRaporlar();
+}
+
+function switchDaireTab(t,el){
+  document.querySelectorAll('.tab-inner').forEach(x=>x.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('daire-liste-panel').classList.toggle('hidden',t!=='liste');
+  document.getElementById('daire-detay-panel').classList.toggle('hidden',t!=='detay');
+  if(t==='detay'){populateDetaySel();renderDaireDetay()}
+}
+
+function populateDetaySel(){
+  const sel=document.getElementById('detay-daire-sel');
+  sel.innerHTML=V.daireler.map(d=>`<option value="${d.id}">No ${d.no} — ${d.ad}</option>`).join('');
+}
+
+/* ── Aidat modal: daire değişince tutarı otomatik doldur ── */
+function aidatDaireChange(){
+  const id=+document.getElementById('a-daire').value;
+  const d=V.daireler.find(x=>x.id===id);
+  if(d){
+    document.getElementById('a-tutar').value=d.aidat;
+    document.getElementById('a-tutar-hint').textContent='(Mevcut: '+fmt(d.aidat)+')';
+  }
+}
+
+/* ── Toplu borç ── */
+function topluOlustur(){
+  const bas=document.getElementById('tb-bas').value;
+  const bit=document.getElementById('tb-bit').value;
+  if(!bas||!bit){alert('Dönem aralığı giriniz');return}
+  if(bas>bit){alert('Başlangıç dönemi bitiş döneminden büyük olamaz');return}
+  const donemler=[];
+  let cur=bas;
+  while(cur<=bit){donemler.push(cur);const[y,m]=cur.split('-').map(Number);cur=m===12?`${y+1}-01`:`${y}-${String(m+1).padStart(2,'0')}`}
+  const durum=document.getElementById('tb-durum').value;
+  let html=`<div style="max-height:320px;overflow-y:auto"><table class="donem-table"><thead><tr><th><input type="checkbox" id="tb-all" onchange="toggleAllToplu(this)"> Tümü</th><th>Daire / Sakin</th><th>Dönem</th><th>Tutar (₺)</th><th>Durum</th></tr></thead><tbody>`;
+  V.daireler.forEach(d=>{
+    donemler.forEach(donem=>{
+      const mevcut=V.aidatlar.find(a=>a.daireId===d.id&&a.donem===donem);
+      if(mevcut)return; // zaten var, atla
+      html+=`<tr>
+        <td><input type="checkbox" class="tb-chk" data-daire="${d.id}" data-donem="${donem}" data-tutar="${d.aidat}" checked></td>
+        <td>No ${d.no} – ${d.ad}</td>
+        <td>${ayFmt(donem)}</td>
+        <td><input type="number" class="tb-tutar" id="tbt-${d.id}-${donem}" value="${d.aidat}" style="width:90px"></td>
+        <td><select class="tb-dur" id="tbd-${d.id}-${donem}"><option value="gecikti" ${durum==='gecikti'?'selected':''}>Gecikti</option><option value="bekliyor" ${durum==='bekliyor'?'selected':''}>Bekliyor</option></select></td>
+      </tr>`;
+    });
+  });
+  html+='</tbody></table></div>';
+  document.getElementById('toplu-tablo').innerHTML=html||'<div class="empty">Seçilen dönemlerde tüm daireler için kayıt zaten mevcut.</div>';
+}
+
+function toggleAllToplu(cb){document.querySelectorAll('.tb-chk').forEach(c=>c.checked=cb.checked)}
+
+function topluKaydet(){
+  let n=0;
+  document.querySelectorAll('.tb-chk:checked').forEach(chk=>{
+    const daireId=+chk.dataset.daire;
+    const donem=chk.dataset.donem;
+    const tutar=+document.getElementById(`tbt-${daireId}-${donem}`).value||+chk.dataset.tutar;
+    const durum=document.getElementById(`tbd-${daireId}-${donem}`).value;
+    V.aidatlar.push({id:nid++,daireId,donem,tutar,durum,tarih:'',not:''});
+    n++;
+  });
+  if(n===0){notify('Seçili kayıt bulunamadı','err');return}
+  saveV();closeModal('toplu-modal');renderAidatlar();notify(`${n} aidat borcu kaydedildi`);
+}
+
+/* ── Kasa ── */
+function kasaEkle(){
+  const tutar=+document.getElementById('k-tutar').value;
+  const tarih=document.getElementById('k-tarih').value;
+  const acik=document.getElementById('k-acik').value.trim()||'Açılış Bakiyesi';
+  if(!tutar){notify('Tutar giriniz','err');return}
+  V.gg.push({id:nid++,tur:'kasa',kat:'Kasa',acik,firmaId:0,tutar,tarih:tarih||TODAY.toISOString().slice(0,10)});
+  saveV();closeModal('kasa-modal');renderGG();notify('Kasa girişi kaydedildi');
+}
+
+/* ── Aidat ── */
+function aidatEkle(){
+  const dId=+document.getElementById('a-daire').value;
+  const donem=document.getElementById('a-donem').value;
+  const tutar=+document.getElementById('a-tutar').value;
+  const durum=document.getElementById('a-durum').value;
+  const tarih=document.getElementById('a-tarih').value;
+  const not=document.getElementById('a-not').value;
+  if(!dId||!donem||!tutar){notify('Daire, dönem ve tutar zorunludur','err');return}
+  // Aynı daire+dönem var mı?
+  const existing=V.aidatlar.find(a=>a.daireId===dId&&a.donem===donem);
+  if(existing){
+    existing.tutar=tutar;existing.durum=durum;existing.tarih=tarih;existing.not=not;
+    syncAidatGelir(existing);
+    saveV();closeModal('aidat-modal');renderAidatlar();notify('Aidat güncellendi');
+  } else {
+    const a={id:nid++,daireId:dId,donem,tutar,durum,tarih,not};
+    V.aidatlar.push(a);
+    syncAidatGelir(a);
+    saveV();closeModal('aidat-modal');renderAidatlar();notify('Aidat kaydedildi');
+  }
+}
+
+function aidatDurumDegistir(id,yeniDurum){
+  const a=V.aidatlar.find(x=>x.id===id);
+  if(!a)return;
+  if(yeniDurum==='odendi'&&!a.tarih)a.tarih=TODAY.toISOString().slice(0,10);
+  a.durum=yeniDurum;
+  syncAidatGelir(a);
+  saveV();renderAidatlar();notify('Durum güncellendi');
+}
+
+function aidatSil(id){
+  if(!confirm('Bu kaydı silmek istediğinize emin misiniz?'))return;
+  // gelir tablosundan da kaldır
+  V.gg=V.gg.filter(g=>g.aidatId!==id);
+  V.aidatlar=V.aidatlar.filter(a=>a.id!==id);
+  saveV();renderAidatlar();notify('Kayıt silindi');
+}
+
+function renderAidatlar(){
+  const aylar=[...new Set(V.aidatlar.map(a=>a.donem))].sort().reverse();
+  const sel=document.getElementById('ay-filtre');
+  const cur=sel.value;
+  sel.innerHTML=aylar.map(a=>`<option value="${a}" ${a===cur?'selected':''}>${ayFmt(a)}</option>`).join('');
+  const secAy=sel.value||aylar[0];
+  const rows=V.aidatlar.filter(a=>a.donem===secAy).sort((a,b)=>a.daireId-b.daireId);
+  document.getElementById('aidat-tbody').innerHTML=rows.length?rows.map(a=>{
+    const d=getDaire(a.daireId);
+    const bc=a.durum==='odendi'?'b-odendi':a.durum==='bekliyor'?'b-bekliyor':'b-gecikti';
+    const bt=a.durum==='odendi'?'Ödendi':a.durum==='bekliyor'?'Bekliyor':'Gecikti';
+    const otherDurums=a.durum!=='odendi'?`<option value="odendi">Ödendi</option>`:''
+      +(a.durum!=='bekliyor'?`<option value="bekliyor">Bekliyor</option>`:'')
+      +(a.durum!=='gecikti'?`<option value="gecikti">Gecikti</option>`:'');
+    return `<tr>
+      <td><strong>No ${d.no}</strong></td>
+      <td>${d.ad}</td>
+      <td>${d.tur==='kiraci'?'<span class="badge b-kiraci">Kiracı</span>':'<span class="badge b-evsahibi">Ev Sahibi</span>'}</td>
+      <td><strong>${fmt(a.tutar)}</strong></td>
+      <td>${ayFmt(a.donem)}</td>
+      <td>
+        <select onchange="aidatDurumDegistir(${a.id},this.value)" style="font-size:11px;padding:3px 6px;border:1px solid #d0d0c8;border-radius:6px;background:#fff">
+          <option value="${a.durum}" selected>${bt}</option>
+          ${otherDurums}
+        </select>
+      </td>
+      <td>${tarFmt(a.tarih)}</td>
+      <td><button class="btn sm" onclick="aidatSil(${a.id})" style="color:#c0392b">Sil</button></td>
+    </tr>`;
+  }).join(''):'<tr><td colspan="8" style="text-align:center;padding:2rem;color:#aaa">Bu dönem için kayıt yok</td></tr>';
+}
+
+/* ── Gelir/Gider ── */
+function ggEkle(){
+  const tur=document.getElementById('gg-tur').value;
+  const kat=document.getElementById('gg-kat').value;
+  const acik=document.getElementById('gg-acik').value.trim();
+  const firmaId=+document.getElementById('gg-firma').value||0;
+  const tutar=+document.getElementById('gg-tutar').value;
+  const tarih=document.getElementById('gg-tarih').value;
+  if(!acik||!tutar||!tarih){notify('Zorunlu alanları doldurunuz','err');return}
+  V.gg.push({id:nid++,tur,kat,acik,firmaId,tutar,tarih});
+  saveV();closeModal('gg-modal');renderGG();notify('Kayıt eklendi');
+}
+function ggSil(id){
+  const g=V.gg.find(x=>x.id===id);
+  if(g&&g.auto){notify('Otomatik aidat kaydı silinemez. Aidat tablosundan siliniz.','err');return}
+  if(g&&g.tur==='kasa'){if(!confirm('Kasa girişini silmek istediğinize emin misiniz?'))return}
+  else{if(!confirm('Bu kaydı silmek istediğinize emin misiniz?'))return}
+  V.gg=V.gg.filter(x=>x.id!==id);saveV();renderGG();notify('Kayıt silindi');
+}
+
+function renderGG(){
+  const f=document.getElementById('gg-filtre').value;
+  let rows=f?V.gg.filter(g=>g.tur===f):V.gg;
+  rows=[...rows].sort((a,b)=>b.tarih.localeCompare(a.tarih));
+
+  const kasa=V.gg.filter(g=>g.tur==='kasa').reduce((s,g)=>s+g.tutar,0);
+  const tg=V.gg.filter(g=>g.tur==='gelir').reduce((s,g)=>s+g.tutar,0);
+  const td=V.gg.filter(g=>g.tur==='gider').reduce((s,g)=>s+g.tutar,0);
+  const net=kasa+tg-td;
+  document.getElementById('gg-metrics').innerHTML=`
+    <div class="metric"><div class="metric-label">Açılış / Kasa</div><div class="metric-value" style="color:#5a1e8c">${fmt(kasa)}</div></div>
+    <div class="metric"><div class="metric-label">Toplam Gelir</div><div class="metric-value green">${fmt(tg)}</div></div>
+    <div class="metric"><div class="metric-label">Toplam Gider</div><div class="metric-value red">${fmt(td)}</div></div>
+    <div class="metric"><div class="metric-label">Güncel Bakiye</div><div class="metric-value ${net>=0?'green':'red'}">${fmt(net)}</div></div>`;
+
+  document.getElementById('gg-tbody').innerHTML=rows.length?rows.map(g=>{
+    const f2=getFirma(g.firmaId);
+    let turBadge,renk;
+    if(g.tur==='kasa'){turBadge='<span class="badge b-kasa">Kasa</span>';renk='#5a1e8c'}
+    else if(g.tur==='gelir'){turBadge='<span class="badge b-gelir">Gelir</span>';renk='#2d7a4f'}
+    else{turBadge='<span class="badge b-gider">Gider</span>';renk='#c0392b'}
+    const autoTag=g.auto?'<span class="badge b-auto">otomatik</span> ':'';
+    const silBtn=g.auto?`<button class="btn sm" style="color:#aaa;cursor:default" title="Aidat tablosundan silinir">-</button>`:`<button class="btn sm" onclick="ggSil(${g.id})" style="color:#c0392b">Sil</button>`;
+    return `<tr>
+      <td>${tarFmt(g.tarih)}</td>
+      <td>${turBadge}</td>
+      <td>${g.kat}</td>
+      <td>${autoTag}${g.acik}</td>
+      <td style="color:#666">${f2?f2.ad:'-'}</td>
+      <td style="font-weight:600;color:${renk}">${fmt(g.tutar)}</td>
+      <td>${silBtn}</td>
+    </tr>`;
+  }).join(''):'<tr><td colspan="7" style="text-align:center;padding:2rem;color:#aaa">Kayıt yok</td></tr>';
+}
+
+function updateGGKat(){
+  const t=document.getElementById('gg-tur').value;
+  document.getElementById('gg-kat').innerHTML=(t==='gelir'?gelirKats:giderKats).map(c=>`<option>${c}</option>`).join('');
+}
+function populateFirmaSelect(){
+  document.getElementById('gg-firma').innerHTML='<option value="">— Seç —</option>'+V.firmalar.map(f=>`<option value="${f.id}">${f.ad}</option>`).join('');
+}
+
+/* ── Daireler ── */
+function updateDaireTur(){
+  document.getElementById('evsahibi-box').classList.toggle('hidden',document.getElementById('d-tur').value!=='kiraci');
+}
+
+function openDaireModal(idx){
+  editDaireIdx=idx;
+  const isNew=idx<0;
+  document.getElementById('daire-modal-title').textContent=isNew?'Daire Ekle':'Daire Düzenle';
+  const ids=['d-no','d-aidat','d-plaka','d-not','d-ad','d-tel','d-email','d-giris','d-es-ad','d-es-tel','d-es-email','d-kira','d-sozl-bas','d-sozl-bit'];
+  ids.forEach(id=>{document.getElementById(id).value=''});
+  document.getElementById('d-tur').value='evsahibi';
+  if(!isNew){
+    const d=V.daireler[idx];
+    document.getElementById('d-no').value=d.no;
+    document.getElementById('d-aidat').value=d.aidat;
+    document.getElementById('d-plaka').value=d.plaka||'';
+    document.getElementById('d-not').value=d.not||'';
+    document.getElementById('d-tur').value=d.tur;
+    document.getElementById('d-ad').value=d.ad;
+    document.getElementById('d-tel').value=d.tel||'';
+    document.getElementById('d-email').value=d.email||'';
+    document.getElementById('d-giris').value=d.giris||'';
+    if(d.tur==='kiraci'&&d.es){
+      document.getElementById('d-es-ad').value=d.es.ad||'';
+      document.getElementById('d-es-tel').value=d.es.tel||'';
+      document.getElementById('d-es-email').value=d.es.email||'';
+      document.getElementById('d-kira').value=d.es.kira||'';
+      document.getElementById('d-sozl-bas').value=d.es.sozlBas||'';
+      document.getElementById('d-sozl-bit').value=d.es.sozlBit||'';
+    }
+  }
+  updateDaireTur();
+  openModal('daire-modal');
+}
+
+function daireKaydet(){
+  const no=document.getElementById('d-no').value.trim();
+  const ad=document.getElementById('d-ad').value.trim();
+  if(!no||!ad){notify('Daire no ve sakin adı zorunludur','err');return}
+  const tur=document.getElementById('d-tur').value;
+  const yeniAidat=+document.getElementById('d-aidat').value||V.ayarlar.aidat;
+  const data={
+    id:editDaireIdx<0?nid++:V.daireler[editDaireIdx].id,
+    no,ad,tur,
+    tel:document.getElementById('d-tel').value,
+    email:document.getElementById('d-email').value,
+    aidat:yeniAidat,
+    plaka:document.getElementById('d-plaka').value,
+    giris:document.getElementById('d-giris').value,
+    not:document.getElementById('d-not').value,
+    es:{}
+  };
+  if(tur==='kiraci'){
+    data.es={ad:document.getElementById('d-es-ad').value,tel:document.getElementById('d-es-tel').value,email:document.getElementById('d-es-email').value,kira:+document.getElementById('d-kira').value,sozlBas:document.getElementById('d-sozl-bas').value,sozlBit:document.getElementById('d-sozl-bit').value};
+  }
+  if(editDaireIdx<0){
+    V.daireler.push(data);
+  } else {
+    const eskiAidat=V.daireler[editDaireIdx].aidat;
+    V.daireler[editDaireIdx]=data;
+    // Aidat değiştiyse: bekleyen/gecikmiş kayıtları güncelle, ödenenler sabit kalsın
+    if(eskiAidat!==yeniAidat){
+      V.aidatlar.forEach(a=>{
+        if(a.daireId===data.id&&a.durum!=='odendi'){
+          a.tutar=yeniAidat;
+        }
+      });
+      notify('Daire güncellendi. Bekleyen aidatlar yeni tutara güncellendi.');
+    }
+  }
+  saveV();closeModal('daire-modal');renderDaireListesi();
+  if(editDaireIdx>=0&&V.daireler[editDaireIdx]&&V.daireler[editDaireIdx].aidat===yeniAidat)notify('Daire güncellendi');
+  editDaireIdx=-1;
+}
+
+function daireSil(i){
+  if(!confirm('Bu daireyi silmek istediğinize emin misiniz?'))return;
+  const id=V.daireler[i].id;
+  V.daireler.splice(i,1);
+  V.aidatlar=V.aidatlar.filter(a=>a.daireId!==id);
+  V.gg=V.gg.filter(g=>!g.aidatId||getDaire(V.aidatlar.find(a=>a.id===g.aidatId)?.daireId)?.id!==id);
+  saveV();renderDaireListesi();notify('Daire ve ilgili kayıtlar silindi');
+}
+
+function renderDaireListesi(){
+  document.getElementById('daire-tbody').innerHTML=V.daireler.length?V.daireler.map((d,i)=>{
+    const turBadge=d.tur==='kiraci'?'<span class="badge b-kiraci">Kiracı</span>':'<span class="badge b-evsahibi">Ev Sahibi</span>';
+    return `<tr><td><strong>No ${d.no}</strong></td><td>${d.ad}</td><td>${turBadge}</td><td>${d.tel||'-'}</td><td>${d.email||'-'}</td><td>${d.plaka||'-'}</td><td><strong>${fmt(d.aidat)}</strong>/ay</td><td>${tarFmt(d.giris)}</td>
+    <td><button class="btn sm" onclick="openDaireModal(${i})" style="margin-right:4px">Düzenle</button><button class="btn sm" onclick="daireSil(${i})" style="color:#c0392b">Sil</button></td></tr>`;
+  }).join(''):'<tr><td colspan="9" style="text-align:center;padding:2rem;color:#aaa">Henüz daire eklenmemiş</td></tr>';
+}
+
+function renderDaireDetay(){
+  const id=+document.getElementById('detay-daire-sel').value;
+  const d=V.daireler.find(x=>x.id===id);
+  if(!d){document.getElementById('daire-detay-icerik').innerHTML='<div class="empty">Daire seçiniz</div>';return}
+  const turBadge=d.tur==='kiraci'?'<span class="badge b-kiraci">Kiracı</span>':'<span class="badge b-evsahibi">Ev Sahibi</span>';
+  let esHtml='';
+  if(d.tur==='kiraci'&&d.es&&d.es.ad){
+    esHtml=`<div class="card" style="background:#f0f7ff;border-color:#b8d4f0">
+      <div class="card-header"><span class="card-title" style="color:#004085">Ev Sahibi Bilgileri</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;font-size:13px">
+        <div><span style="color:#888">Ad:</span> <strong>${d.es.ad}</strong></div>
+        <div><span style="color:#888">Tel:</span> ${d.es.tel||'-'}</div>
+        <div><span style="color:#888">E-posta:</span> ${d.es.email||'-'}</div>
+        <div><span style="color:#888">Kira:</span> <strong>${d.es.kira?fmt(d.es.kira):'-'}</strong></div>
+        <div><span style="color:#888">Sözleşme:</span> ${tarFmt(d.es.sozlBas)} — ${tarFmt(d.es.sozlBit)}</div>
+      </div>
+    </div>`;
+  }
+  const aidatlar=V.aidatlar.filter(a=>a.daireId===d.id).sort((a,b)=>b.donem.localeCompare(a.donem)).slice(0,10);
+  const aHtml=aidatlar.length?aidatlar.map(a=>{
+    const bc=a.durum==='odendi'?'b-odendi':a.durum==='bekliyor'?'b-bekliyor':'b-gecikti';
+    const bt=a.durum==='odendi'?'Ödendi':a.durum==='bekliyor'?'Bekliyor':'Gecikti';
+    return `<tr><td>${ayFmt(a.donem)}</td><td>${fmt(a.tutar)}</td><td><span class="badge ${bc}">${bt}</span></td><td>${tarFmt(a.tarih)}</td></tr>`;
+  }).join(''):'<tr><td colspan="4" style="text-align:center;color:#aaa">Kayıt yok</td></tr>';
+  document.getElementById('daire-detay-icerik').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+      <div class="card">
+        <div class="card-header"><span class="card-title">No ${d.no} — ${d.ad}</span>${turBadge}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;font-size:13px">
+          <div><span style="color:#888">Telefon:</span> ${d.tel||'-'}</div>
+          <div><span style="color:#888">E-posta:</span> ${d.email||'-'}</div>
+          <div><span style="color:#888">Plaka:</span> ${d.plaka||'-'}</div>
+          <div><span style="color:#888">Aidat:</span> <strong>${fmt(d.aidat)}/ay</strong></div>
+          <div><span style="color:#888">Giriş:</span> ${tarFmt(d.giris)}</div>
+          ${d.not?`<div style="grid-column:1/-1"><span style="color:#888">Not:</span> ${d.not}</div>`:''}
+        </div>
+      </div>
+      ${esHtml||'<div></div>'}
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Aidat Geçmişi</span></div>
+      <table><thead><tr><th>Dönem</th><th>Tutar</th><th>Durum</th><th>Ödeme Tarihi</th></tr></thead><tbody>${aHtml}</tbody></table>
+    </div>`;
+}
+
+/* ── Firmalar ── */
+function openFirmaModal(idx){
+  editFirmaIdx=idx<0?-1:idx;
+  document.getElementById('firma-modal-title').textContent=editFirmaIdx<0?'Firma Ekle':'Firma Düzenle';
+  ['f-ad','f-yetkili','f-tel','f-email','f-adres','f-not'].forEach(id=>{document.getElementById(id).value=''});
+  if(editFirmaIdx>=0){
+    const f=V.firmalar[editFirmaIdx];
+    document.getElementById('f-ad').value=f.ad;
+    document.getElementById('f-kat').value=f.kat;
+    document.getElementById('f-yetkili').value=f.yetkili||'';
+    document.getElementById('f-tel').value=f.tel||'';
+    document.getElementById('f-email').value=f.email||'';
+    document.getElementById('f-adres').value=f.adres||'';
+    document.getElementById('f-not').value=f.not||'';
+  }
+  openModal('firma-modal');
+}
+function firmaKaydet(){
+  const ad=document.getElementById('f-ad').value.trim();
+  if(!ad){notify('Firma adı zorunludur','err');return}
+  const data={id:editFirmaIdx<0?nid++:V.firmalar[editFirmaIdx].id,ad,kat:document.getElementById('f-kat').value,yetkili:document.getElementById('f-yetkili').value,tel:document.getElementById('f-tel').value,email:document.getElementById('f-email').value,adres:document.getElementById('f-adres').value,not:document.getElementById('f-not').value};
+  if(editFirmaIdx<0)V.firmalar.push(data);
+  else V.firmalar[editFirmaIdx]=data;
+  saveV();closeModal('firma-modal');renderFirmalar();notify(editFirmaIdx<0?'Firma eklendi':'Firma güncellendi');editFirmaIdx=-1;
+}
+function firmaSil(i){if(!confirm('Firmayı silmek istediğinize emin misiniz?'))return;V.firmalar.splice(i,1);saveV();renderFirmalar();notify('Firma silindi')}
+
+function renderFirmalar(){
+  const el=document.getElementById('firma-listesi');
+  if(!V.firmalar.length){el.innerHTML='<div class="empty">Henüz firma eklenmemiş</div>';return}
+  el.innerHTML=V.firmalar.map((f,i)=>`
+    <div class="firma-card">
+      <div class="firma-header">
+        <div><div class="firma-ad">${f.ad}</div><div class="firma-tur">${f.kat}</div></div>
+        <div style="display:flex;gap:6px"><button class="btn sm" onclick="openFirmaModal(${i})">Düzenle</button><button class="btn sm" onclick="firmaSil(${i})" style="color:#c0392b">Sil</button></div>
+      </div>
+      <div class="firma-detay">
+        ${f.yetkili?`<div><span class="firma-detay-label">Yetkili: </span>${f.yetkili}</div>`:''}
+        ${f.tel?`<div><span class="firma-detay-label">Tel: </span><strong>${f.tel}</strong></div>`:''}
+        ${f.email?`<div><span class="firma-detay-label">E-posta: </span>${f.email}</div>`:''}
+        ${f.adres?`<div><span class="firma-detay-label">Adres: </span>${f.adres}</div>`:''}
+        ${f.not?`<div style="grid-column:1/-1"><span class="firma-detay-label">Not: </span>${f.not}</div>`:''}
+      </div>
+    </div>`).join('');
+}
+
+/* ── Özet ── */
+function renderOzet(){
+  const buAy=TODAY.toISOString().slice(0,7);
+  const ba=V.aidatlar.filter(a=>a.donem===buAy);
+  const tah=ba.filter(a=>a.durum==='odendi').reduce((s,a)=>s+a.tutar,0);
+  const borc=ba.filter(a=>a.durum!=='odendi').reduce((s,a)=>s+a.tutar,0);
+  const kasa=V.gg.filter(g=>g.tur==='kasa').reduce((s,g)=>s+g.tutar,0);
+  const gider=V.gg.filter(g=>g.tur==='gider').reduce((s,g)=>s+g.tutar,0);
+  const gelir=V.gg.filter(g=>g.tur==='gelir').reduce((s,g)=>s+g.tutar,0);
+  const net=kasa+gelir-gider;
+  document.getElementById('ozet-metrics').innerHTML=`
+    <div class="metric"><div class="metric-label">Bu Ay Tahsilat</div><div class="metric-value green">${fmt(tah)}</div></div>
+    <div class="metric"><div class="metric-label">Bekleyen Borç</div><div class="metric-value ${borc>0?'red':'green'}">${fmt(borc)}</div></div>
+    <div class="metric"><div class="metric-label">Güncel Bakiye</div><div class="metric-value ${net>=0?'green':'red'}">${fmt(net)}</div></div>
+    <div class="metric"><div class="metric-label">Toplam Gider</div><div class="metric-value red">${fmt(gider)}</div></div>`;
+  document.getElementById('ozet-daires').innerHTML=V.daireler.length?V.daireler.map(d=>{
+    const a=ba.find(x=>x.daireId===d.id);
+    const cls=a?a.durum==='odendi'?'oc':a.durum==='bekliyor'?'ob':'og':'';
+    return `<div class="daire-card ${cls}"><div class="daire-no">${d.no}</div><div class="daire-sub">${d.ad.split(' ')[0]}</div></div>`;
+  }).join(''):'<div style="color:#aaa;font-size:13px">Henüz daire eklenmemiş</div>';
+  const son=V.aidatlar.filter(a=>a.tarih).sort((a,b)=>b.tarih.localeCompare(a.tarih)).slice(0,6).map(a=>{
+    const d=getDaire(a.daireId);
+    return `<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f0f0ec;font-size:13px"><span>No ${d.no} — ${ayFmt(a.donem)}</span><span style="color:#2d7a4f;font-weight:600">${fmt(a.tutar)}</span></div>`;
+  }).join('');
+  document.getElementById('son-islem').innerHTML=son||'<div class="empty">Henüz işlem yok</div>';
+}
+
+/* ── Raporlar ── */
+function renderRaporlar(){
+  const buAy=TODAY.toISOString().slice(0,7);
+  const ba=V.aidatlar.filter(a=>a.donem===buAy);
+  const tah=ba.filter(a=>a.durum==='odendi').reduce((s,a)=>s+a.tutar,0);
+  const bek=V.daireler.reduce((s,d)=>s+d.aidat,0);
+  const oran=bek>0?Math.round(tah/bek*100):0;
+  const odN=ba.filter(a=>a.durum==='odendi').length;
+  document.getElementById('rapor-metrics').innerHTML=`
+    <div class="metric"><div class="metric-label">Tahsilat Oranı</div><div class="metric-value ${oran>=75?'green':'amber'}">${oran}%</div><div class="progress-bar"><div class="progress-fill" style="width:${oran}%"></div></div></div>
+    <div class="metric"><div class="metric-label">Ödeme Yapan</div><div class="metric-value">${odN} / ${V.daireler.length}</div></div>
+    <div class="metric"><div class="metric-label">Tahsilat</div><div class="metric-value green">${fmt(tah)}</div></div>
+    <div class="metric"><div class="metric-label">Beklenen</div><div class="metric-value">${fmt(bek)}</div></div>`;
+  const aylar=[...new Set(V.aidatlar.map(a=>a.donem))].sort().reverse().slice(0,6);
+  document.getElementById('aylik-ozet').innerHTML=aylar.length?aylar.map(a=>{
+    const t=V.aidatlar.filter(x=>x.donem===a&&x.durum==='odendi').reduce((s,x)=>s+x.tutar,0);
+    const b=V.aidatlar.filter(x=>x.donem===a&&x.durum!=='odendi').reduce((s,x)=>s+x.tutar,0);
+    return `<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f0f0ec;font-size:13px"><span>${ayFmt(a)}</span><div style="display:flex;gap:10px"><span style="color:#2d7a4f;font-weight:600">${fmt(t)}</span>${b>0?`<span style="color:#c0392b">-${fmt(b)}</span>`:''}</div></div>`;
+  }).join(''):'<div class="empty">Veri yok</div>';
+  const kats={};
+  V.gg.filter(g=>g.tur==='gider').forEach(g=>{kats[g.kat]=(kats[g.kat]||0)+g.tutar});
+  const topG=Object.values(kats).reduce((s,v)=>s+v,0);
+  document.getElementById('gider-kat').innerHTML=Object.entries(kats).sort((a,b)=>b[1]-a[1]).map(([k,v])=>{
+    const p=topG>0?Math.round(v/topG*100):0;
+    return `<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:3px"><span>${k}</span><span style="font-weight:600">${fmt(v)} (${p}%)</span></div><div class="progress-bar"><div class="progress-fill" style="width:${p}%;background:#c0392b"></div></div></div>`;
+  }).join('')||'<div class="empty">Gider kaydı yok</div>';
+  const borclu=V.daireler.filter(d=>V.aidatlar.some(a=>a.daireId===d.id&&a.durum!=='odendi'));
+  document.getElementById('borclu-div').innerHTML=borclu.length?`<div class="tbl-wrap"><table><thead><tr><th>Daire</th><th>Sakin</th><th>Tür</th><th>Dönem</th><th>Tutar</th><th>Durum</th></tr></thead><tbody>${
+    borclu.flatMap(d=>V.aidatlar.filter(a=>a.daireId===d.id&&a.durum!=='odendi').sort((a,b)=>a.donem.localeCompare(b.donem)).map(a=>{
+      const bc=a.durum==='bekliyor'?'b-bekliyor':'b-gecikti';
+      const bt=a.durum==='bekliyor'?'Bekliyor':'Gecikti';
+      return `<tr><td><strong>No ${d.no}</strong></td><td>${d.ad}</td><td>${d.tur==='kiraci'?'Kiracı':'Ev Sahibi'}</td><td>${ayFmt(a.donem)}</td><td><strong>${fmt(a.tutar)}</strong></td><td><span class="badge ${bc}">${bt}</span></td></tr>`;
+    })).join('')
+  }</tbody></table></div>`:'<div class="empty" style="padding:1rem">✅ Tüm aidatlar ödenmiş!</div>';
+}
+
+/* ── Ayarlar ── */
+function ayarlarKaydet(){
+  V.ayarlar.ad=document.getElementById('s-ad').value||V.ayarlar.ad;
+  V.ayarlar.yonetici=document.getElementById('s-yonetici').value;
+  V.ayarlar.aidat=+document.getElementById('s-aidat').value||V.ayarlar.aidat;
+  V.ayarlar.adres=document.getElementById('s-adres').value;
+  V.ayarlar.tel=document.getElementById('s-tel').value;
+  saveV();document.getElementById('apt-baslik').textContent=V.ayarlar.ad;updateAlt();closeModal('ayarlar-modal');notify('Ayarlar kaydedildi');
+}
+function updateAlt(){
+  const parts=[];
+  if(V.ayarlar.yonetici)parts.push('Yönetici: '+V.ayarlar.yonetici);
+  if(V.ayarlar.adres)parts.push(V.ayarlar.adres);
+  document.getElementById('apt-alt').textContent=parts.join(' | ');
+}
+
+/* ── Excel ── */
+function excelExport(){
+  if(typeof XLSX==='undefined'){notify('Excel kütüphanesi yüklenemedi','err');return}
+  const wb=XLSX.utils.book_new();
+  const dRows=[['No','Ad Soyad','Tür','Telefon','E-posta','Araç Plakası','Aidat (₺)','Giriş Tarihi','Not','Ev Sahibi Adı','Ev Sahibi Tel','Ev Sahibi E-posta','Kira (₺)','Sözleşme Başlangıç','Sözleşme Bitiş']];
+  V.daireler.forEach(d=>{dRows.push([d.no,d.ad,d.tur==='kiraci'?'Kiracı':'Ev Sahibi',d.tel,d.email,d.plaka,d.aidat,d.giris,d.not,d.es&&d.es.ad?d.es.ad:'',d.es&&d.es.tel?d.es.tel:'',d.es&&d.es.email?d.es.email:'',d.es&&d.es.kira?d.es.kira:'',d.es&&d.es.sozlBas?d.es.sozlBas:'',d.es&&d.es.sozlBit?d.es.sozlBit:''])});
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(dRows),'Daireler');
+  const aRows=[['Daire No','Sakin','Tür','Dönem','Tutar (₺)','Durum','Ödeme Tarihi','Not']];
+  V.aidatlar.sort((a,b)=>b.donem.localeCompare(a.donem)).forEach(a=>{
+    const d=getDaire(a.daireId);
+    aRows.push([d.no,d.ad,d.tur==='kiraci'?'Kiracı':'Ev Sahibi',a.donem,a.tutar,a.durum==='odendi'?'Ödendi':a.durum==='bekliyor'?'Bekliyor':'Gecikti',a.tarih,a.not]);
+  });
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(aRows),'Aidatlar');
+  const gRows=[['Tarih','Tür','Kategori','Açıklama','İlgili Firma','Tutar (₺)']];
+  V.gg.sort((a,b)=>b.tarih.localeCompare(a.tarih)).forEach(g=>{const f=getFirma(g.firmaId);gRows.push([g.tarih,g.tur==='kasa'?'Kasa':g.tur==='gelir'?'Gelir':'Gider',g.kat,g.acik,f?f.ad:'',g.tutar])});
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(gRows),'Gelir-Gider');
+  const fRows=[['Firma Adı','Kategori','Yetkili','Telefon','E-posta','Adres','Not']];
+  V.firmalar.forEach(f=>{fRows.push([f.ad,f.kat,f.yetkili,f.tel,f.email,f.adres,f.not])});
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(fRows),'Firmalar');
+  const aylar=[...new Set(V.aidatlar.map(a=>a.donem))].sort().reverse();
+  const rRows=[['Dönem','Tahsilat (₺)','Bekleyen (₺)','Beklenen (₺)','Tahsilat Oranı']];
+  aylar.forEach(ay=>{
+    const ba=V.aidatlar.filter(a=>a.donem===ay);
+    const t=ba.filter(a=>a.durum==='odendi').reduce((s,a)=>s+a.tutar,0);
+    const b=ba.filter(a=>a.durum!=='odendi').reduce((s,a)=>s+a.tutar,0);
+    const bek=V.daireler.reduce((s,d)=>s+d.aidat,0);
+    rRows.push([ay,t,b,bek,bek>0?Math.round(t/bek*100)+'%':'']);
+  });
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rRows),'Aylık Rapor');
+  const ad=(V.ayarlar.ad||'Apartman').replace(/\s+/g,'_');
+  XLSX.writeFile(wb,`${ad}_${TODAY.toISOString().slice(0,10)}.xlsx`);
+  notify('Excel dosyası indirildi');
+}
+
+/* ── Init ── */
+document.querySelectorAll('.overlay').forEach(w=>{w.addEventListener('click',e=>{if(e.target===w)w.classList.remove('open')})});
+document.getElementById('a-daire').addEventListener('focus',()=>{
+  document.getElementById('a-daire').innerHTML=V.daireler.map(d=>`<option value="${d.id}">No ${d.no} — ${d.ad}</option>`).join('');
+  aidatDaireChange();
+});
+document.getElementById('gg-firma').addEventListener('focus',populateFirmaSelect);
+
+document.getElementById('s-ad').value=V.ayarlar.ad;
+document.getElementById('s-yonetici').value=V.ayarlar.yonetici;
+document.getElementById('s-aidat').value=V.ayarlar.aidat;
+document.getElementById('s-adres').value=V.ayarlar.adres||'';
+document.getElementById('s-tel').value=V.ayarlar.tel||'';
+document.getElementById('apt-baslik').textContent=V.ayarlar.ad;
+document.getElementById('gg-tarih').value=TODAY.toISOString().slice(0,10);
+document.getElementById('k-tarih').value=TODAY.toISOString().slice(0,10);
+document.getElementById('a-donem').value=TODAY.toISOString().slice(0,7);
+document.getElementById('a-tarih').value=TODAY.toISOString().slice(0,10);
+document.getElementById('tb-bas').value=TODAY.toISOString().slice(0,7);
+document.getElementById('tb-bit').value=TODAY.toISOString().slice(0,7);
+updateGGKat();updateAlt();
+_loadFromSheets().then(function(){
+  document.getElementById('s-ad').value=V.ayarlar.ad||'';
+  document.getElementById('s-yonetici').value=V.ayarlar.yonetici||'';
+  document.getElementById('s-aidat').value=V.ayarlar.aidat||500;
+  document.getElementById('s-adres').value=V.ayarlar.adres||'';
+  document.getElementById('s-tel').value=V.ayarlar.tel||'';
+  document.getElementById('apt-baslik').textContent=V.ayarlar.ad||'Apartman';
+  updateAlt();
+  renderOzet();
+});
+
+/* ── Önceden yüklenmiş veriler ── */
+(function(){
+  if(!localStorage.getItem('apartman_v3')){
+    localStorage.setItem('apartman_v3', '{"ayarlar": {"ad": "Murat Apartmanı", "yonetici": "", "aidat": 500, "adres": "", "tel": ""}, "daireler": [{"no": "1", "ad": "Ahmet Doğan", "tur": "evsahibi", "tel": "+90 535 590 31 11", "email": "", "aidat": 500, "plaka": "", "giris": "", "not": "", "es": {}, "id": 1}, {"no": "2", "ad": "Dilek Çirkin", "tur": "evsahibi", "tel": "+90 531 503 44 53", "email": "", "aidat": 500, "plaka": "", "giris": "", "not": "", "es": {}, "id": 2}, {"no": "3", "ad": "Musa Serçeoğlu", "tur": "evsahibi", "tel": "+90 507 475 60 72", "email": "", "aidat": 500, "plaka": "06DR8444", "giris": "", "not": "", "es": {}, "id": 3}, {"no": "4", "ad": "Pembe Doğangül", "tur": "evsahibi", "tel": "+90 537 776 30 40", "email": "", "aidat": 500, "plaka": "", "giris": "", "not": "", "es": {}, "id": 4}, {"no": "5", "ad": "Doğukan Elverir", "tur": "evsahibi", "tel": "+90 553 440 29 79", "email": "", "aidat": 500, "plaka": "06GS925", "giris": "", "not": "", "es": {}, "id": 5}, {"no": "6", "ad": "Burcu Işık", "tur": "kiraci", "tel": "+90 541 637 78 27", "email": "", "aidat": 500, "plaka": "", "giris": "", "not": "", "es": {}, "id": 6}, {"no": "7", "ad": "Dilber Solmaz", "tur": "evsahibi", "tel": "+90 535 784 97 49", "email": "", "aidat": 500, "plaka": "06ESK116", "giris": "", "not": "", "es": {}, "id": 7}, {"no": "8", "ad": "Mustafa Elverir", "tur": "evsahibi", "tel": "+90 533 247 63 45", "email": "", "aidat": 500, "plaka": "06GL273", "giris": "", "not": "", "es": {}, "id": 8}, {"no": "9", "ad": "Ender Gör", "tur": "evsahibi", "tel": "+90 546 657 06 08", "email": "", "aidat": 500, "plaka": "06SK553", "giris": "", "not": "", "es": {}, "id": 9}, {"no": "10", "ad": "Arif Onak", "tur": "evsahibi", "tel": "+90 532 658 60 17", "email": "", "aidat": 500, "plaka": "", "giris": "", "not": "", "es": {}, "id": 10}, {"no": "11", "ad": "Veli Kurumlu", "tur": "evsahibi", "tel": "+90 533 713 63 21", "email": "", "aidat": 500, "plaka": "06EDF782", "giris": "", "not": "", "es": {}, "id": 11}, {"no": "12", "ad": "Mikail Koca", "tur": "evsahibi", "tel": "+90 533 665 03 46", "email": "", "aidat": 500, "plaka": "06AGF201", "giris": "", "not": "", "es": {}, "id": 12}, {"no": "13", "ad": "Ömer Kel", "tur": "evsahibi", "tel": "+90 546 913 98 67", "email": "", "aidat": 500, "plaka": "06FM8013", "giris": "", "not": "", "es": {}, "id": 13}, {"no": "14", "ad": "Akil Özcan", "tur": "kiraci", "tel": "+90 505 460 17 65", "email": "", "aidat": 500, "plaka": "55AB037", "giris": "", "not": "", "es": {}, "id": 14}, {"no": "15", "ad": "Emrah Çulcu", "tur": "evsahibi", "tel": "+90 546 403 54 37", "email": "", "aidat": 500, "plaka": "06EEK551", "giris": "", "not": "", "es": {}, "id": 15}, {"no": "16", "ad": "Emrah Çulcu", "tur": "evsahibi", "tel": "+90 546 403 54 37", "email": "", "aidat": 500, "plaka": "06KS745", "giris": "", "not": "", "es": {}, "id": 16}, {"no": "17", "ad": "Gazi Kaya", "tur": "evsahibi", "tel": "+90 539 714 14 88", "email": "", "aidat": 500, "plaka": "06RYT49", "giris": "", "not": "", "es": {}, "id": 17}, {"no": "18", "ad": "Gökhan Şarkbülblü", "tur": "evsahibi", "tel": "+90 506 248 69 91", "email": "", "aidat": 500, "plaka": "06AAG142", "giris": "", "not": "", "es": {}, "id": 18}, {"no": "19", "ad": "Hayrettin Onak", "tur": "evsahibi", "tel": "+90 538 606 20 40", "email": "", "aidat": 500, "plaka": "", "giris": "", "not": "", "es": {}, "id": 19}, {"no": "20", "ad": "Dogan Kaya", "tur": "evsahibi", "tel": "+90 505 442 18 54", "email": "", "aidat": 500, "plaka": "", "giris": "", "not": "", "es": {}, "id": 20}, {"no": "21", "ad": "Aydın Gülsoy", "tur": "evsahibi", "tel": "+90 532 688 15 68", "email": "", "aidat": 500, "plaka": "06EZC602", "giris": "", "not": "", "es": {}, "id": 21}, {"no": "22", "ad": "İlker Kurgan", "tur": "evsahibi", "tel": "+90 505 376 06 46", "email": "", "aidat": 500, "plaka": "06YOB14", "giris": "", "not": "", "es": {}, "id": 22}, {"no": "23", "ad": "Davut Can", "tur": "kiraci", "tel": "+90 505 543 38 63", "email": "", "aidat": 500, "plaka": "06FJV712", "giris": "", "not": "", "es": {}, "id": 23}, {"no": "24", "ad": "Barış Sönmez", "tur": "evsahibi", "tel": "+90 505 766 99 90", "email": "", "aidat": 500, "plaka": "06DZL306 / 06DDH50", "giris": "", "not": "", "es": {}, "id": 24}, {"no": "25", "ad": "Hıdır Kaya", "tur": "evsahibi", "tel": "+90 530 696 05 06", "email": "", "aidat": 500, "plaka": "06AFM58", "giris": "", "not": "", "es": {}, "id": 25}, {"no": "26", "ad": "İlyas Bulut", "tur": "evsahibi", "tel": "+90 536 951 88 71", "email": "", "aidat": 500, "plaka": "06BLT187", "giris": "", "not": "", "es": {}, "id": 26}, {"no": "27", "ad": "Emre Şahbudak", "tur": "evsahibi", "tel": "+90 532 519 35 67", "email": "", "aidat": 500, "plaka": "06DVK281", "giris": "", "not": "", "es": {}, "id": 27}, {"no": "28", "ad": "Mustafa Yiğit", "tur": "evsahibi", "tel": "+90 505 791 81 36", "email": "", "aidat": 500, "plaka": "06BJ8476", "giris": "", "not": "", "es": {}, "id": 28}, {"no": "29", "ad": "Hüseyin Sönmez", "tur": "evsahibi", "tel": "+90 542 233 54 60", "email": "", "aidat": 500, "plaka": "", "giris": "", "not": "", "es": {}, "id": 29}, {"no": "30", "ad": "Avni Piri", "tur": "evsahibi", "tel": "+90 535 276 58 58", "email": "", "aidat": 500, "plaka": "06ADZ148", "giris": "", "not": "", "es": {}, "id": 30}, {"no": "31", "ad": "Ali Demir", "tur": "evsahibi", "tel": "+90 536 559 18 55", "email": "", "aidat": 500, "plaka": "06BVJ028", "giris": "", "not": "", "es": {}, "id": 31}, {"no": "32", "ad": "Hüseyin Demir", "tur": "evsahibi", "tel": "+90 536 222 79 76", "email": "", "aidat": 500, "plaka": "06ZEA41", "giris": "", "not": "", "es": {}, "id": 32}, {"no": "33", "ad": "Faruk Küçükkaraduman", "tur": "evsahibi", "tel": "+90 506 600 83 77", "email": "", "aidat": 500, "plaka": "06DNL947", "giris": "", "not": "", "es": {}, "id": 33}, {"no": "34", "ad": "Giray Kara", "tur": "evsahibi", "tel": "+90 532 223 99 08", "email": "", "aidat": 1, "plaka": "06BIA970", "giris": "", "not": "Aidat tutarı 1₺ - kontrol ediniz", "es": {}, "id": 34}, {"no": "35", "ad": "Savaş Şahin", "tur": "evsahibi", "tel": "+90 536 715 43 34", "email": "", "aidat": 500, "plaka": "06EAV781", "giris": "", "not": "", "es": {}, "id": 35}, {"no": "36", "ad": "Mustafa Türközü", "tur": "evsahibi", "tel": "+90 506 367 30 95", "email": "", "aidat": 500, "plaka": "06ABK598", "giris": "", "not": "", "es": {}, "id": 36}, {"no": "37", "ad": "Ekay Kaspak", "tur": "kiraci", "tel": "+90 533 256 66 39", "email": "", "aidat": 500, "plaka": "17AHL006", "giris": "", "not": "", "es": {}, "id": 37}, {"no": "38", "ad": "İsmail Şahin", "tur": "kiraci", "tel": "+90 533 226 43 23", "email": "", "aidat": 500, "plaka": "06F5537", "giris": "", "not": "", "es": {}, "id": 38}, {"no": "0", "ad": "Döndü Erdoğuş", "tur": "evsahibi", "tel": "", "email": "", "aidat": 7500, "plaka": "", "giris": "", "not": "Daire no 0 - kontrol ediniz", "es": {}, "id": 39}], "aidatlar": [{"id": 1001, "daireId": 2, "donem": "2026-03", "tutar": 500, "durum": "gecikti", "tarih": "", "not": ""}, {"id": 1002, "daireId": 2, "donem": "2026-02", "tutar": 500, "durum": "gecikti", "tarih": "", "not": ""}], "gg": [], "firmalar": []}');
+  }
+})();
+
+</script>
+</body>
+</html>
